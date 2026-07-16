@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>stories — archive mockup</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body { background:#fff; color:#111; font-family:"Helvetica Neue", Helvetica, Arial, sans-serif; }
+body.strip-mode { overflow:hidden; }
+
+#controls { position:fixed; top:14px; left:16px; z-index:20; font-size:11px; display:flex; gap:16px; background:rgba(255,255,255,.9); padding:2px 4px; }
+#controls button { font:inherit; font-size:11px; background:none; border:none; cursor:pointer; color:#aaa; text-transform:uppercase; letter-spacing:.1em; padding:0; }
+#controls button.on { color:#111; text-decoration:underline; text-underline-offset:3px; }
+#controls button.icon { line-height:0; padding:0; position:relative; top:2px; }
+#controls button.icon.on { text-decoration:none; }
+#controls .sep { color:#ddd; }
+#years { position:fixed; top:14px; right:16px; z-index:20; font-size:11px; display:flex; gap:12px; background:rgba(255,255,255,.9); padding:2px 4px; }
+#years a { color:#aaa; text-decoration:none; letter-spacing:.1em; cursor:pointer; }
+#years a:hover { color:#111; }
+
+#strip { height:100vh; display:flex; align-items:center; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; padding:0 40vw 0 8vw; }
+#strip::-webkit-scrollbar { display:none; }
+.group { display:flex; flex-direction:column; gap:7px; margin-right:72px; flex-shrink:0; }
+.group.loose { margin-right:8px; }
+.group .imgs { display:flex; gap:8px; }
+.group .label { font-size:10px; color:#aaa; letter-spacing:.08em; height:12px; }
+body.lens-water #strip { align-items:flex-end; padding-bottom:0; }
+.sea { width:calc(100% + 72px); margin:14px 0 0 0; position:relative;
+  background: linear-gradient(to top, rgba(96,150,220,.42), rgba(96,150,220,.13) 70%, rgba(96,150,220,0));
+  transition: height .6s ease; }
+.group.loose-sea { margin-right:0; }
+.sea .mark { position:absolute; top:10px; left:6px; font-size:9px; color:#5b82ad;
+  letter-spacing:.1em; white-space:nowrap; }
+
+:root { --sh: 148px; }
+.story { height:var(--sh); aspect-ratio:9/16; cursor:pointer; flex-shrink:0; position:relative;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1); z-index:1; }
+.story .inner { position:absolute; inset:0; overflow:hidden; }
+.story .echo { position:absolute; inset:-30%; filter: blur(26px); opacity:0; z-index:-1;
+  transition: opacity .4s ease; pointer-events:none; }
+.story:hover { transform: scale(1.32); z-index:3; }
+.story:hover .echo { opacity:.75; }
+.story .inner { filter: blur(7px); transition: filter .45s ease; }
+.story:hover .inner { filter: blur(0); }
+@media (prefers-reduced-motion: reduce) {
+  .story, .story .echo { transition:none; }
+  .story:hover { transform:none; }
+}
+/* the fade: a soft white breath over every edge, scales with story size */
+.story .inner::after { content:''; position:absolute; inset:0;
+  box-shadow: inset 0 0 calc(var(--sh) * 0.11) calc(var(--sh) * 0.068) #fff; pointer-events:none; }
+.empty-frame { height:var(--sh); aspect-ratio:9/16; flex-shrink:0; position:relative; background:#f0f0f0; }
+.empty-frame::after { content:''; position:absolute; inset:0; box-shadow: inset 0 0 16px 10px #fff; }
+.group .label .glyph { font-size:12px; margin-right:6px; }
+body.grid-mode #strip { height:auto; display:block; overflow:visible; padding:64px 16px 40px; }
+body.grid-mode .group { margin:0 0 28px; }
+body.grid-mode .group .imgs { display:grid; grid-template-columns:repeat(auto-fill, minmax(calc(var(--sh) * 0.81), 1fr)); gap:6px; }
+body.grid-mode .story { height:auto; width:100%; aspect-ratio:9/16; }
+
+#box { display:none; position:fixed; inset:0; background:rgba(255,255,255,.96); z-index:10; align-items:center; justify-content:center; flex-direction:column; gap:12px; cursor:pointer; }
+#box.on { display:flex; }
+#box .big { height:82vh; aspect-ratio:9/16; position:relative; }
+#box .big::after { content:''; position:absolute; inset:0;
+  box-shadow: inset 0 0 48px 32px #fff; pointer-events:none; }
+#box .cap { font-size:11px; color:#aaa; letter-spacing:.14em; }
+
+#hint { position:fixed; bottom:14px; left:16px; font-size:10px; color:#ccc; letter-spacing:.08em; z-index:5; }
+#water { position:fixed; bottom:14px; right:16px; font-size:10px; color:#bbb; letter-spacing:.08em; z-index:5;
+  text-align:right; background:rgba(255,255,255,.9); padding:2px 4px; cursor:pointer; }
+#water:hover { color:#111; }
+#methodology { display:none; position:fixed; inset:0; background:rgba(255,255,255,.97); z-index:40;
+  align-items:center; justify-content:center; padding:24px; }
+#methodology.on { display:flex; }
+#methodology .note { max-width:52ch; font-size:12px; line-height:1.7; color:#333; }
+#methodology .note h3 { font-size:11px; letter-spacing:.14em; margin-bottom:14px; font-weight:500; }
+#methodology .note p { margin-bottom:12px; }
+#methodology .note .src { color:#999; font-size:10.5px; }
+#methodology .close { position:absolute; top:14px; right:16px; font-size:11px; color:#aaa;
+  background:none; border:none; cursor:pointer; letter-spacing:.1em; }
+#methodology .close:hover { color:#111; }
+#dice { color:#aaa; transition:color .15s; }
+#dice:hover { color:#111; }
+#dice.rolling svg { animation: roll .45s ease; }
+@keyframes roll { 0% { transform:rotate(0); } 100% { transform:rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { #dice.rolling svg { animation:none; } }
+</style>
+</head>
+<body class="strip-mode">
+
+<div id="controls">
+  <button data-lens="months" class="on">months</button>
+  <button data-lens="moon">moon</button>
+  <button data-lens="water">water</button>
+  <span class="sep">/</span>
+  <button data-view="strip" class="on icon" title="strip" aria-label="strip view">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+      <rect x="2" y="10" width="20" height="4" rx="0.5"/>
+    </svg>
+  </button>
+  <button data-view="grid" class="icon" title="grid" aria-label="grid view">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+      <rect x="3" y="3" width="8" height="8" rx="0.5"/>
+      <rect x="13" y="3" width="8" height="8" rx="0.5"/>
+      <rect x="3" y="13" width="8" height="8" rx="0.5"/>
+      <rect x="13" y="13" width="8" height="8" rx="0.5"/>
+    </svg>
+  </button>
+  <span class="sep">/</span>
+  <button id="dice" class="icon" title="one at random" aria-label="show one random story">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3"/>
+      <circle cx="8.3" cy="8.3" r="1.15" fill="currentColor" stroke="none"/>
+      <circle cx="15.7" cy="8.3" r="1.15" fill="currentColor" stroke="none"/>
+      <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none"/>
+      <circle cx="8.3" cy="15.7" r="1.15" fill="currentColor" stroke="none"/>
+      <circle cx="15.7" cy="15.7" r="1.15" fill="currentColor" stroke="none"/>
+    </svg>
+  </button>
+</div>
+<div id="years"></div>
+<div id="strip"></div>
+<div id="box"><div class="big"></div><div class="cap"></div></div>
+<div id="water" role="button" tabindex="0" aria-label="water cost methodology"></div>
+<div id="methodology">
+  <button class="close">CLOSE</button>
+  <div class="note">
+    <h3>THE WATER</h3>
+    <p>Data centers drink. Cooling the servers that hold your expired stories evaporates real freshwater, and the electricity powering them consumes several times more. In 2023, Meta's data centers used about 2.9 billion liters of water directly — before counting the water behind their electricity, which independent researchers estimate at many times that.</p>
+    <p>This archive weighs about <span id="m-gb"></span> GB. Held in a data center, storage of that size draws on the order of <span id="m-kwh"></span> kWh a year; at typical combined water intensity (~5 liters per kWh, direct cooling plus electricity), that is roughly <span id="m-liters"></span> liters — <span id="m-glasses"></span> glasses of water — every year, forever, to keep memories cold that you were told had expired.</p>
+    <p>Opened from this folder, the same archive consumes almost nothing. The estimate is order-of-magnitude, and stated so — which is more than the platforms' voluntary disclosures do.</p>
+    <p class="src">Sources: Meta Sustainability Report 2024 (water withdrawals); Lawrence Berkeley National Laboratory, 2024 (US data center water use, direct and indirect); University of Wisconsin–Milwaukee Center for Water Policy analyses.</p>
+  </div>
+</div>
+<div id="hint">MOCKUP — everything rests blurred / hover to see clearly / scroll, pinch, roll the die</div>
+
+
+<script>
+// ---------- fake archive: ~3 years, uneven months like a real life ----------
+var DATA = [];
+(function seed() {
+  var rng = mulberry(20260714);
+  var months = [];
+  for (var y = 2022; y <= 2025; y++)
+    for (var m = 1; m <= 12; m++) {
+      if (y === 2022 && m < 9) continue;
+      if (y === 2025 && m > 6) continue;
+      months.push({ y: y, m: m });
+    }
+  months.forEach(function (mo) {
+    // uneven posting rhythm: quiet months, loud months, one silent gap
+    var n = Math.floor(rng() * 11);
+    if (mo.y === 2023 && mo.m === 11) n = 0;           // a silent month
+    if (mo.y === 2024 && (mo.m === 5 || mo.m === 6)) n = 12 + Math.floor(rng() * 5); // a loud season
+    for (var i = 0; i < n; i++) {
+      DATA.push({
+        month: '' + mo.y + String(mo.m).padStart(2, '0'),
+        day: 1 + Math.floor(rng() * 28),
+        seed: Math.floor(rng() * 1e9)
+      });
+    }
+  });
+  DATA.sort(function (a, b) {
+    return (a.month + String(a.day).padStart(2,'0')).localeCompare(b.month + String(b.day).padStart(2,'0'));
+  });
+})();
+function mulberry(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+// ---------- placeholder story looks: gradients, "text stories", b/w moments ----------
+function paint(el, seed) {
+  var r = mulberry(seed);
+  var kind = r();
+  var h1 = Math.floor(r() * 360), h2 = (h1 + 30 + Math.floor(r() * 60)) % 360;
+  if (kind < 0.62) {                       // photo-ish gradient
+    var s = 35 + Math.floor(r() * 45), l = 40 + Math.floor(r() * 35);
+    el.style.background = 'linear-gradient(' + Math.floor(r()*360) + 'deg, hsl(' + h1 + ',' + s + '%,' + l + '%), hsl(' + h2 + ',' + s + '%,' + (l - 18) + '%))';
+  } else if (kind < 0.78) {                // dark "text story"
+    el.style.background = '#1a1a1a';
+    var bar = document.createElement('div');
+    bar.style.cssText = 'position:absolute;left:14%;right:14%;top:42%;height:9%;background:#fff;opacity:.9;';
+    el.appendChild(bar);
+  } else if (kind < 0.9) {                 // light screenshot-ish
+    el.style.background = '#f3f1ee';
+    for (var i = 0; i < 3; i++) {
+      var ln = document.createElement('div');
+      ln.style.cssText = 'position:absolute;left:12%;height:4%;background:#c9c5bf;top:' + (18 + i * 9) + '%;width:' + (30 + r() * 45) + '%;';
+      el.appendChild(ln);
+    }
+  } else {                                 // b/w moment
+    var g = 25 + Math.floor(r() * 55);
+    el.style.background = 'linear-gradient(' + Math.floor(r()*360) + 'deg, hsl(0,0%,' + g + '%), hsl(0,0%,' + (g + 30) + '%))';
+  }
+}
+
+// ---------- the archive machinery ----------
+var lens = 'months', view = 'strip';
+var storyH = 148;
+var strip = document.getElementById('strip');
+var MONTHS = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// Meta data-center water withdrawal, billions of liters (Meta Environmental Data Index / Sustainability Reports; 2024-25 estimated)
+var WATER = { 2017:1.14, 2018:1.73, 2019:2.73, 2020:3.00, 2021:3.42, 2022:3.62, 2023:2.94, 2024:3.2, 2025:3.4 };
+var PHASES = [
+  ['\u{1F311}','new moon'], ['\u{1F312}','waxing crescent'], ['\u{1F313}','first quarter'],
+  ['\u{1F314}','waxing gibbous'], ['\u{1F315}','full moon'], ['\u{1F316}','waning gibbous'],
+  ['\u{1F317}','last quarter'], ['\u{1F318}','waning crescent']
+];
+function label(m) { return MONTHS[+m.slice(4)] + ' ' + m.slice(0,4); }
+function fullDate(d) { return d.day + ' ' + MONTHS[+d.month.slice(4)] + ' ' + d.month.slice(0,4); }
+function moonPhase(d) {
+  // days since a known new moon (2000-01-06), synodic month 29.53059
+  var date = Date.UTC(+d.month.slice(0,4), +d.month.slice(4) - 1, d.day);
+  var days = (date - Date.UTC(2000,0,6)) / 86400000;
+  var frac = ((days % 29.53059) + 29.53059) % 29.53059 / 29.53059;
+  return Math.round(frac * 8) % 8;
+}
+function allMonths() {
+  // every month between first and last, including silent ones
+  var ms = DATA.map(function (x) { return x.month; }).sort();
+  var first = ms[0], last = ms[ms.length - 1];
+  var out = [];
+  var y = +first.slice(0,4), m = +first.slice(4);
+  while (true) {
+    var key = '' + y + String(m).padStart(2,'0');
+    out.push(key);
+    if (key === last) break;
+    m++; if (m > 12) { m = 1; y++; }
+  }
+  return out;
+}
+function render() {
+  strip.innerHTML = '';
+  document.body.className = view + '-mode' + (lens === 'water' ? ' lens-water' : '');
+  if (lens === 'months') renderMonths();
+  else if (lens === 'moon') renderMoon();
+  else renderWater();
+  years();
+}
+function renderWater() {
+  // the sea rises: cumulative liters Meta's data centers drank while your archive accumulated
+  var months = allMonths();
+  var byMonth = {};
+  DATA.forEach(function (d) { (byMonth[d.month] = byMonth[d.month] || []).push(d); });
+  var cum = 0, total = 0;
+  months.forEach(function (m) { total += (WATER[+m.slice(0,4)] || 3.2) / 12; });
+  var maxH = window.innerHeight * 0.44;
+  var lastYear = null;
+  months.forEach(function (m, gi) {
+    cum += (WATER[+m.slice(0,4)] || 3.2) / 12;
+    var group = mkGroup('m' + m + '-' + gi, label(m));
+    group.classList.add('loose-sea');
+    var items = byMonth[m] || [];
+    if (!items.length) {
+      var ef = document.createElement('div'); ef.className = 'empty-frame';
+      group.querySelector('.imgs').appendChild(ef);
+    } else {
+      items.forEach(function (d) { addStory(group, d); });
+    }
+    var sea = document.createElement('div');
+    sea.className = 'sea';
+    sea.style.height = Math.round(24 + (cum / total) * maxH) + 'px';
+    var y = m.slice(0,4);
+    if (y !== lastYear && WATER[+y]) {
+      var mk = document.createElement('div'); mk.className = 'mark';
+      mk.textContent = y + ' \u00b7 ' + WATER[+y].toFixed(1).replace('.0','') + 'B liters';
+      sea.appendChild(mk);
+      lastYear = y;
+    }
+    group.appendChild(sea);
+    strip.appendChild(group);
+  });
+}
+function renderMonths() {
+  var months = allMonths();
+  var byMonth = {};
+  DATA.forEach(function (d) { (byMonth[d.month] = byMonth[d.month] || []).push(d); });
+  months.forEach(function (m, gi) {
+    var group = mkGroup('m' + m + '-' + gi, label(m));
+    var items = byMonth[m] || [];
+    if (!items.length) {
+      // a silent month: one empty frame, absence made visible
+      var ef = document.createElement('div'); ef.className = 'empty-frame';
+      group.querySelector('.imgs').appendChild(ef);
+    } else {
+      items.forEach(function (d) { addStory(group, d); });
+    }
+    strip.appendChild(group);
+  });
+}
+function renderMoon() {
+  var order = [0,1,2,3,4,5,6,7];
+  var byPhase = {};
+  DATA.forEach(function (d) { var p = moonPhase(d); (byPhase[p] = byPhase[p] || []).push(d); });
+  order.forEach(function (p, gi) {
+    var items = byPhase[p] || [];
+    if (!items.length) return;
+    var group = mkGroup('p' + p + '-' + gi, PHASES[p][1]);
+    var lab = group.querySelector('.label');
+    lab.innerHTML = '<span class="glyph">' + PHASES[p][0] + '</span>' + PHASES[p][1] + ' \u00b7 ' + items.length;
+    items.forEach(function (d) { addStory(group, d); });
+    strip.appendChild(group);
+  });
+}
+function mkGroup(id, text) {
+  var group = document.createElement('div');
+  group.className = 'group';
+  group.id = id;
+  var lab = document.createElement('div'); lab.className = 'label'; lab.textContent = text;
+  var imgs = document.createElement('div'); imgs.className = 'imgs';
+  group.appendChild(lab); group.appendChild(imgs);
+  return group;
+}
+function addStory(group, d) {
+  var st = document.createElement('div');
+  st.className = 'story';
+  var echo = document.createElement('div'); echo.className = 'echo'; paint(echo, d.seed);
+  var inner = document.createElement('div'); inner.className = 'inner'; paint(inner, d.seed);
+  st.appendChild(echo); st.appendChild(inner);
+  st.dataset.idx = DATA.indexOf(d);
+  group.querySelector('.imgs').appendChild(st);
+}
+function years() {
+  var el = document.getElementById('years');
+  el.innerHTML = '';
+  if (lens === 'moon') return;
+  var seen = {};
+  DATA.forEach(function (x) { seen[x.month.slice(0,4)] = 1; });
+  var ys = Object.keys(seen).sort();
+  ys.forEach(function (y) {
+    var a = document.createElement('a');
+    a.textContent = y;
+    a.onclick = function () {
+      var groups = strip.querySelectorAll('.group');
+      for (var i = 0; i < groups.length; i++) {
+        if (groups[i].id.slice(1,5) === y) {
+          if (view === 'strip') strip.scrollTo({ left: groups[i].offsetLeft - 60, behavior: 'smooth' });
+          else groups[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+      }
+    };
+    el.appendChild(a);
+  });
+}
+document.addEventListener('wheel', function (e) {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    storyH = Math.min(340, Math.max(70, storyH * (e.deltaY < 0 ? 1.07 : 0.93)));
+    document.documentElement.style.setProperty('--sh', storyH.toFixed(0) + 'px');
+  }
+}, { passive: false });
+strip.addEventListener('wheel', function (e) {
+  if (e.ctrlKey || e.metaKey) return;
+  if (view !== 'strip') return;
+  if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); strip.scrollLeft += e.deltaY; }
+}, { passive: false });
+document.getElementById('controls').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.lens) { lens = b.dataset.lens; mark('lens', b); }
+  if (b.dataset.view) { view = b.dataset.view; mark('view', b); }
+  box.classList.remove('on');
+  render();
+});
+function mark(kind, b) {
+  document.querySelectorAll('#controls button[data-' + kind + ']').forEach(function (x) { x.classList.remove('on'); });
+  b.classList.add('on');
+}
+var box = document.getElementById('box');
+strip.addEventListener('click', function (e) {
+  var st = e.target.closest('.story'); if (!st) return;
+  var d = DATA[+st.dataset.idx];
+  var big = box.querySelector('.big');
+  big.innerHTML = ''; big.style.background = '';
+  paint(big, d.seed);
+  var p = PHASES[moonPhase(d)];
+  box.querySelector('.cap').textContent = fullDate(d) + ' \u00b7 ' + p[0] + ' ' + p[1];
+  box.classList.add('on');
+});
+box.addEventListener('click', function () { box.classList.remove('on'); });
+var dice = document.getElementById('dice');
+dice.addEventListener('click', function (e) {
+  e.stopPropagation();
+  dice.classList.remove('rolling'); void dice.offsetWidth; dice.classList.add('rolling');
+  var d = DATA[Math.floor(Math.random() * DATA.length)];
+  var big = box.querySelector('.big');
+  big.innerHTML = ''; big.style.background = '';
+  paint(big, d.seed);
+  var p = PHASES[moonPhase(d)];
+  box.querySelector('.cap').textContent = fullDate(d) + ' \u00b7 ' + p[0] + ' ' + p[1];
+  box.classList.add('on');
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') box.classList.remove('on');
+  if (view === 'strip' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft'))
+    strip.scrollLeft += (e.key === 'ArrowRight' ? 320 : -320);
+});
+render();
+(function waterLine() {
+  // ~3MB per stored story; ~0.05 kWh per GB-year; ~5 L water per kWh (cooling + electricity)
+  var GB = DATA.length * 3 / 1024;
+  var kwh = GB * 0.05;
+  var liters = kwh * 5;
+  var glasses = Math.max(1, Math.round(liters / 0.25));
+  var w = document.getElementById('water');
+  w.textContent = 'keeping these ' + DATA.length + ' stories on Meta\u2019s servers \u2248 ' + glasses +
+    ' glasses of water a year \u00b7 this archive: none';
+  document.getElementById('m-gb').textContent = GB.toFixed(1);
+  document.getElementById('m-kwh').textContent = kwh.toFixed(2);
+  document.getElementById('m-liters').textContent = liters.toFixed(1);
+  document.getElementById('m-glasses').textContent = glasses;
+  var meth = document.getElementById('methodology');
+  function openM() { meth.classList.add('on'); }
+  function closeM() { meth.classList.remove('on'); }
+  w.addEventListener('click', openM);
+  w.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openM(); } });
+  meth.querySelector('.close').addEventListener('click', closeM);
+  meth.addEventListener('click', function (e) { if (e.target === meth) closeM(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeM(); });
+})();
+</script>
+</body>
+</html>
